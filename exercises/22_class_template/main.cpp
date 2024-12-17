@@ -10,23 +10,9 @@ struct Tensor4D {
 
     Tensor4D(unsigned int const shape_[4], T const *data_) {
         unsigned int size = 1;
-        if (shape_[3]) {
-            shape[3] = shape_[3];
-            size *= shape_[3];
-            if (shape_[2]) {
-                shape[2] = shape_[2];
-                size *= shape_[2];
-                if (shape_[1]) {
-                    shape[1] = shape_[1];
-                    size *= shape_[1];
-                    if (shape_[0]) {
-                        shape[0] = shape_[0];
-                        size *= shape_[0];
-                    }
-                }
-            }
-        }
         // TODO: 填入正确的 shape 并计算 size
+        std::memcpy(shape, shape_, 4 * sizeof(unsigned int));
+        size = shape[0] * shape[1] * shape[2] * shape[3];
         data = new T[size];
         std::memcpy(data, data_, size * sizeof(T));
     }
@@ -45,59 +31,34 @@ struct Tensor4D {
     // 则 `this` 与 `others` 相加时，3 个形状为 `[1, 2, 1, 4]` 的子张量各自与 `others` 对应项相加。
     Tensor4D &operator+=(Tensor4D const &others) {
         // TODO: 实现单向广播的加法
-        if (others.shape[3] == 1) {
-            for (int i = 0; i < shape[0]; i++) {
-                for (int j = 0; j < shape[1]; j++) {
-                    for (int u = 0; u < shape[2]; u++) {
-                        for (int v = 0; v < shape[3]; v++) {
-                            data[i * shape[1] * shape[2] * shape[3] + j * shape[2] * shape[3] + u * shape[3] + v] += others.data[i * shape[1] * shape[2] + j * shape[2] + u + 0];
-                        }
-                    }
-                }
-            }
-            return *this;
-        }
-        if (others.shape[2] == 1) {
-            for (int i = 0; i < shape[0]; i++) {
-                for (int j = 0; j < shape[1]; j++) {
-                    for (int u = 0; u < shape[2]; u++) {
-                        for (int v = 0; v < shape[3]; v++) {
-                            data[i * shape[1] * shape[2] * shape[3] + j * shape[2] * shape[3] + u * shape[3] + v] += others.data[i * shape[1] * shape[2] * shape[3] + j * shape[2] * shape[3] + 0 * shape[3] + v];
-                        }
-                    }
-                }
-            }
-            return *this;
-        }
-        if (others.shape[1] == 1) {
-            for (int i = 0; i < shape[0]; i++) {
-                for (int j = 0; j < shape[1]; j++) {
-                    for (int u = 0; u < shape[2]; u++) {
-                        for (int v = 0; v < shape[3]; v++) {
-                            data[i * shape[1] * shape[2] * shape[3] + j * shape[2] * shape[3] + u * shape[3] + v] += others.data[i * shape[1] * shape[3] + 0 * shape[3] + u * shape[3] + v];
-                        }
-                    }
-                }
-            }
-            return *this;
-        }
-        if (others.shape[0] == 1) {
-            for (int i = 0; i < shape[0]; i++) {
-                for (int j = 0; j < shape[1]; j++) {
-                    for (int u = 0; u < shape[2]; u++) {
-                        for (int v = 0; v < shape[3]; v++) {
-                            data[i * shape[1] * shape[2] * shape[3] + j * shape[2] * shape[3] + u * shape[3] + v] += others.data[0 * shape[2] * shape[3] + j * shape[2] * shape[3] + u * shape[3] + v];
-                        }
-                    }
-                }
-            }
-            return *this;
-        }
+        int oi, oj, ou, ov;
         for (int i = 0; i < shape[0]; i++) {
+            if (others.shape[0] != shape[0]) {
+                oi = 0;
+            } else {
+                oi = i;
+            }
             for (int j = 0; j < shape[1]; j++) {
+                if (others.shape[1] != shape[1]) {
+                    oj = 0;
+                } else {
+                    oj = j;
+                }
                 for (int u = 0; u < shape[2]; u++) {
+                    if (others.shape[2] != shape[2]) {
+                        ou = 0;
+                    } else {
+                        ou = u;
+                    }
                     for (int v = 0; v < shape[3]; v++) {
-                        data[i * shape[0] + j * shape[1] + u * shape[2] + v] += others.data[i * shape[0] + j * shape[1] + u * shape[2] + v];
+                        if (others.shape[3] != shape[3]) {
+                            ov = 0;
+                        } else {
+                            ov = v;
+                        }
+                        auto index = i * shape[1] * shape[2] * shape[3] + j * shape[2] * shape[3] + u * shape[3] + v;
+                        auto oindex = oi * others.shape[1] * others.shape[2] * others.shape[3] + oj * others.shape[2] * others.shape[3] + ou * others.shape[3] + ov;
+                        data[index] += others.data[oindex];
                     }
                 }
             }
