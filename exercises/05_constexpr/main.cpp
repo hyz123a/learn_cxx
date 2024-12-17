@@ -1,13 +1,17 @@
 #include "../exercise.h"
 
 constexpr unsigned long long fibonacci(int i) {
+    if (i > 20) {
+        return 0;
+    }
     switch (i) {
         case 0:
             return 0;
         case 1:
             return 1;
         default:
-            return fibonacci(i - 1) + fibonacci(i - 2);
+            // 递归深度影响是否能进行编译器计算
+            return fibonacci(i - 2) + fibonacci(i - 1);
     }
 }
 
